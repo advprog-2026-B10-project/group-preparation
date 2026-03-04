@@ -1,8 +1,10 @@
-package id.ac.ui.cs.advprog.grouppreparation.repository;
+package id.ac.ui.cs.advprog.bidmart.notification.repository;
 
-import id.ac.ui.cs.advprog.grouppreparation.model.entity.Notification;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
+
+import id.ac.ui.cs.advprog.bidmart.notification.entity.Notification;
+
 import java.util.List;
 
 @Repository
