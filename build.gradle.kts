@@ -6,7 +6,7 @@ plugins {
 
 group = "id.ac.ui.cs.advprog"
 version = "0.0.1-SNAPSHOT"
-description = "group-preparation"
+description = "bidmart"
 
 java {
 	toolchain {

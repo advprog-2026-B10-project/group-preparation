@@ -1,4 +1,4 @@
-package id.ac.ui.cs.advprog.grouppreparation.model.entity;
+package id.ac.ui.cs.advprog.bidmart.order.entity;
 
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
