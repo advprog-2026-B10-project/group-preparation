@@ -12,7 +12,7 @@ import id.ac.ui.cs.advprog.bidmart.auth.entity.User;
 import id.ac.ui.cs.advprog.bidmart.auth.repository.UserRepository;
 
 @SpringBootApplication
-@ComponentScan(basePackages = "id.ac.ui.cs.advprog.bidmart") // Forces scanning of all sub-packages
+@ComponentScan(basePackages = "id.ac.ui.cs.advprog.bidmart")
 public class BidMartApplication {
     public static void main(String[] args) {
         SpringApplication.run(BidMartApplication.class, args);
@@ -27,7 +27,7 @@ public class BidMartApplication {
                     .password(encoder.encode("AdminPass123"))
                     .displayName("System Admin")
                     .role(Role.ADMIN)
-                    .isEnabled(true) // Admins don't need verification usually
+                    .isEnabled(true)
                     .build();
                 repository.save(admin);
             }
