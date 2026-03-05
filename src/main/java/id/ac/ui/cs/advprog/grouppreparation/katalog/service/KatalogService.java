@@ -5,7 +5,6 @@ import id.ac.ui.cs.advprog.grouppreparation.katalog.repository.KatalogRepository
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import java.util.Arrays;
 import java.util.List;
 
 @Service
@@ -25,5 +24,9 @@ public class KatalogService {
     // Method buat dipanggil Controller
     public List<Katalog> getAllKatalog() {
         return katalogRepository.findAll();
+    }
+
+    public Katalog getKatalogById(Long id) {
+        return katalogRepository.findById(id).orElse(null);
     }
 }

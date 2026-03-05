@@ -30,4 +30,14 @@ public class KatalogController {
     public ResponseEntity<List<Katalog>> getAllKatalog() {
         return ResponseEntity.ok(katalogService.getAllKatalog());
     }
+
+    @GetMapping("/{id}")
+    public ResponseEntity<Katalog> getKatalogById(@PathVariable Long id) {
+        Katalog katalog = katalogService.getKatalogById(id);
+        if (katalog != null) {
+            return ResponseEntity.ok(katalog);
+        } else {
+            return ResponseEntity.notFound().build();
+        }
+    }
 }

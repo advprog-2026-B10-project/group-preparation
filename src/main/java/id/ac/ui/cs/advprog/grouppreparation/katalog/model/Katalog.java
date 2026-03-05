@@ -1,4 +1,5 @@
 package id.ac.ui.cs.advprog.grouppreparation.katalog.model;
+
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
@@ -21,7 +22,9 @@ public class Katalog {
 
     private String gambar;
 
-    private String kategori;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "kategori_id")
+    private Kategori kategori;
 
     @Column(nullable = false)
     private Double hargaAwal;
@@ -32,7 +35,7 @@ public class Katalog {
 
     public Katalog() {}
 
-    public Katalog(String judul, String deskripsi, String gambar, String kategori, Double hargaAwal, Double hargaCadangan, Integer durasiLelang) {
+    public Katalog(String judul, String deskripsi, String gambar, Kategori kategori, Double hargaAwal, Double hargaCadangan, Integer durasiLelang) {
         this.judul = judul;
         this.deskripsi = deskripsi;
         this.gambar = gambar;
