@@ -20,4 +20,29 @@ public class BiddingController {
         Auction newAuction = biddingService.createAuction(request);
         return ResponseEntity.ok(newAuction);
     }
+
+    @PostMapping("/bid")
+    public String placeBid(
+            @RequestParam String userId,
+            @RequestParam Long auctionId,
+            @RequestParam Double amount
+    ) {
+        return biddingService.placeBid(userId, auctionId, amount);
+    }
+
+    @PostMapping("/win")
+    public String winAuction(
+            @RequestParam String userId,
+            @RequestParam Double amount
+    ) {
+        return biddingService.winAuction(userId, amount);
+    }
+
+    @PostMapping("/lose")
+    public String loseAuction(
+            @RequestParam String userId,
+            @RequestParam Double amount
+    ) {
+        return biddingService.loseAuction(userId, amount);
+    }
 }

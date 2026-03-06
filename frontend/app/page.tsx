@@ -2,6 +2,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import axios from 'axios';
+import Link from 'next/link';
 
 interface User {
   id: number;
@@ -137,6 +138,11 @@ export default function HomePage() {
               </p>
               <div className="mt-8 flex gap-4">
                 <button className="px-6 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg font-medium transition">Browse Auctions</button>
+                <Link href="/wallet">
+                  <button className="px-6 py-2 bg-emerald-600 hover:bg-emerald-700 rounded-lg font-medium transition shadow-lg hover:shadow-emerald-900/20">
+                    My Wallet
+                  </button>
+                </Link>
                 {userRole === 'SELLER' && (
                   <button className="px-6 py-2 bg-purple-600 hover:bg-purple-700 rounded-lg font-medium transition">Post New Item</button>
                 )}
