@@ -25,4 +25,29 @@ public class BiddingController {
     public String createDummyAuction() {
         return biddingService.createDummyAuction();
     }
+
+    @PostMapping("/bid")
+    public String placeBid(
+            @RequestParam String userId,
+            @RequestParam Long auctionId,
+            @RequestParam Double amount
+    ) {
+        return biddingService.placeBid(userId, auctionId, amount);
+    }
+
+    @PostMapping("/win")
+    public String winAuction(
+            @RequestParam String userId,
+            @RequestParam Double amount
+    ) {
+        return biddingService.winAuction(userId, amount);
+    }
+
+    @PostMapping("/lose")
+    public String loseAuction(
+            @RequestParam String userId,
+            @RequestParam Double amount
+    ) {
+        return biddingService.loseAuction(userId, amount);
+    }
 }
