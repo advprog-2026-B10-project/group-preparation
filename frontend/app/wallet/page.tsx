@@ -11,9 +11,7 @@ export default function WalletPage() {
                     </Link>
                     <h1 className="text-3xl font-bold text-[#3b82f6]">Manage Wallet</h1>
                 </div>
-
                 <WalletCard />
-
                 <p className="text-center text-gray-600 mt-12 text-sm">
                     Secure transactions powered by BidMart Wallet System
                 </p>
