@@ -9,4 +9,6 @@ public interface WalletService {
     void holdBalance(String userId, Double amount);
     void releaseHeldBalance(String userId, Double amount);
     void deductHeldBalance(String userId, Double amount);
+    void payFromHeldBalance(String userId, Double amount);
+    void handleWin(String userId, Long amount);
 }
