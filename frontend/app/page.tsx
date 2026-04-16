@@ -1,5 +1,5 @@
 'use client';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useSyncExternalStore } from 'react';
 import { useRouter } from 'next/navigation';
 import axios from 'axios';
 import Link from 'next/link';
@@ -12,17 +12,29 @@ interface User {
   role: string; 
 }
 
+interface AuthSnapshot {
+  email: string | null;
+  role: string | null;
+}
+
 export default function HomePage() {
   const [users, setUsers] = useState<User[]>([]);
-  const [currentUser] = useState<string | null>(() => {
-    if (typeof window === 'undefined') return null;
-    return localStorage.getItem('email');
-  });
-  const [userRole] = useState<string | null>(() => {
-    if (typeof window === 'undefined') return null;
-    return localStorage.getItem('role');
-  }); // Track role
   const router = useRouter();
+
+  const authSnapshot = useSyncExternalStore<AuthSnapshot>(
+    () => () => {},
+    () => ({
+      email: localStorage.getItem('email'),
+      role: localStorage.getItem('role'),
+    }),
+    () => ({
+      email: null,
+      role: null,
+    })
+  );
+
+  const currentUser = authSnapshot.email;
+  const userRole = authSnapshot.role;
 
   const fetchUsers = async (token: string) => {
     try {
@@ -40,7 +52,6 @@ export default function HomePage() {
 
   useEffect(() => {
     const token = localStorage.getItem('token');
-    const role = localStorage.getItem('role');
 
     if (!token) {
       router.push('/login');
@@ -48,11 +59,11 @@ export default function HomePage() {
     }
 
     // Only attempt to fetch the user list if the user is an ADMIN
-    if (role === 'ADMIN') {
+    if (userRole === 'ADMIN') {
       // eslint-disable-next-line react-hooks/set-state-in-effect
       fetchUsers(token);
     }
-  }, [router]);
+  }, [router, userRole]);
 
   const getRoleBadgeStyle = (role: string) => {
     switch (role?.toUpperCase()) {
