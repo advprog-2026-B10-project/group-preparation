@@ -1,5 +1,6 @@
 'use client';
 import { useState } from 'react';
+import axios from 'axios';
 import axiosClient from '@/lib/axiosClient';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
@@ -21,6 +22,11 @@ export default function LoginPage() {
         email, 
         password 
       });
+
+      if (response.data.mfaRequired) {
+        setError(response.data.message || 'MFA is enabled for this account. Verification flow will be completed in the next milestone step.');
+        return;
+      }
       
       localStorage.setItem('token', response.data.token);
       localStorage.setItem('refreshToken', response.data.refreshToken);
@@ -28,7 +34,7 @@ export default function LoginPage() {
       localStorage.setItem('role', response.data.role);
       router.push('/');
     } catch (err: unknown) {
-      const message = axiosClient.isAxiosError?.(err)
+      const message = axios.isAxiosError(err)
         ? (err.response?.data as { message?: string } | undefined)?.message || 'Invalid credentials or account not verified.'
         : 'Invalid credentials or account not verified.';
       setError(message);

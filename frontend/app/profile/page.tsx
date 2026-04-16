@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import axios from 'axios';
 import axiosClient from '@/lib/axiosClient';
 import { logout } from '@/lib/authUtils';
 import Link from 'next/link';
@@ -32,6 +33,7 @@ export default function ProfilePage() {
   const [phoneNumber, setPhoneNumber] = useState('');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [mfaToggling, setMfaToggling] = useState(false);
   const [status, setStatus] = useState<UiStatus>({
     type: '',
     message: '',
@@ -59,7 +61,7 @@ export default function ProfilePage() {
       setPhoneNumber(response.data.phoneNumber ?? '');
     } catch (err: unknown) {
       const fallbackMessage = 'Failed to load profile.';
-      if (axiosClient.isAxiosError?.(err)) {
+      if (axios.isAxiosError(err)) {
         const apiError = err.response?.data as ApiError | undefined;
         setStatus({
           type: 'error',
@@ -95,7 +97,7 @@ export default function ProfilePage() {
     } catch (err: unknown) {
       const fallbackMessage = 'Failed to update profile.';
 
-      if (axiosClient.isAxiosError?.(err)) {
+      if (axios.isAxiosError(err)) {
         const apiError = err.response?.data as ApiError | undefined;
         const details = apiError?.details ? Object.values(apiError.details).join(', ') : '';
         setStatus({
@@ -110,6 +112,37 @@ export default function ProfilePage() {
       }
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleToggleMfa = async () => {
+    if (!profile) {
+      return;
+    }
+
+    setMfaToggling(true);
+    setStatus({ type: '', message: '' });
+
+    try {
+      const response = await axiosClient.post('/auth/mfa/toggle', {
+        enabled: !profile.mfaEnabled,
+      });
+
+      setProfile((prev) => prev ? { ...prev, mfaEnabled: response.data.mfaEnabled } : prev);
+      setStatus({
+        type: 'success',
+        message: response.data.message || 'MFA status updated successfully.',
+      });
+    } catch (err: unknown) {
+      const fallbackMessage = 'Failed to update MFA status.';
+      if (axios.isAxiosError(err)) {
+        const apiError = err.response?.data as ApiError | undefined;
+        setStatus({ type: 'error', message: apiError?.message || fallbackMessage });
+      } else {
+        setStatus({ type: 'error', message: fallbackMessage });
+      }
+    } finally {
+      setMfaToggling(false);
     }
   };
 
@@ -174,7 +207,21 @@ export default function ProfilePage() {
               </div>
               <div className="bg-gray-900/60 rounded-lg p-4 border border-gray-700">
                 <p className="text-xs uppercase text-gray-500">2FA Status</p>
-                <p className="font-medium text-gray-200">{profile.mfaEnabled ? 'Enabled' : 'Disabled'}</p>
+                <div className="flex items-center justify-between gap-3 mt-1">
+                  <p className="font-medium text-gray-200">{profile.mfaEnabled ? 'Enabled' : 'Disabled'}</p>
+                  <button
+                    type="button"
+                    onClick={handleToggleMfa}
+                    disabled={mfaToggling}
+                    className={`px-3 py-1 text-xs rounded-md font-semibold transition ${
+                      profile.mfaEnabled
+                        ? 'bg-amber-600 hover:bg-amber-700 text-white'
+                        : 'bg-blue-600 hover:bg-blue-700 text-white'
+                    } disabled:opacity-60`}
+                  >
+                    {mfaToggling ? 'Updating...' : profile.mfaEnabled ? 'Disable MFA' : 'Enable MFA'}
+                  </button>
+                </div>
               </div>
             </div>
 
