@@ -2,10 +2,13 @@ package id.ac.ui.cs.advprog.bidmart.bidding.controller;
 
 import id.ac.ui.cs.advprog.bidmart.bidding.dto.CreateAuctionRequest;
 import id.ac.ui.cs.advprog.bidmart.bidding.entity.Auction;
+import id.ac.ui.cs.advprog.bidmart.bidding.repository.AuctionRepository;
 import id.ac.ui.cs.advprog.bidmart.bidding.service.BiddingService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/bidding")
@@ -14,6 +17,9 @@ public class BiddingController {
 
     @Autowired
     private BiddingService biddingService;
+
+    @Autowired
+    private AuctionRepository auctionRepository;
 
     @PostMapping("/create")
     public ResponseEntity<Auction> createAuction(@RequestBody CreateAuctionRequest request) {
@@ -30,19 +36,14 @@ public class BiddingController {
         return biddingService.placeBid(userId, auctionId, amount);
     }
 
-    @PostMapping("/win")
-    public String winAuction(
-            @RequestParam String userId,
-            @RequestParam Double amount
-    ) {
-        return biddingService.winAuction(userId, amount);
+    @GetMapping("/auctions")
+    public ResponseEntity<List<Auction>> getAllAuctions() {
+        return ResponseEntity.ok(auctionRepository.findAll());
     }
 
-    @PostMapping("/lose")
-    public String loseAuction(
-            @RequestParam String userId,
-            @RequestParam Double amount
-    ) {
-        return biddingService.loseAuction(userId, amount);
+    @GetMapping("/auctions/{id}")
+    public ResponseEntity<Auction> getAuction(@PathVariable Long id) {
+        return ResponseEntity.ok(auctionRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Auction tidak ditemukan")));
     }
 }
