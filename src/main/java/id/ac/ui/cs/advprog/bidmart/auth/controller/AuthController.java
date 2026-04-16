@@ -3,7 +3,9 @@ package id.ac.ui.cs.advprog.bidmart.auth.controller;
 import id.ac.ui.cs.advprog.bidmart.auth.dto.AuthResponse;
 import id.ac.ui.cs.advprog.bidmart.auth.dto.AdminUserResponse;
 import id.ac.ui.cs.advprog.bidmart.auth.dto.LoginRequest;
+import id.ac.ui.cs.advprog.bidmart.auth.dto.ProfileResponse;
 import id.ac.ui.cs.advprog.bidmart.auth.dto.RegisterRequest;
+import id.ac.ui.cs.advprog.bidmart.auth.dto.UpdateProfileRequest;
 import id.ac.ui.cs.advprog.bidmart.auth.repository.UserRepository;
 import id.ac.ui.cs.advprog.bidmart.auth.service.AuthService;
 import jakarta.validation.Valid;
@@ -13,6 +15,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -48,5 +51,20 @@ public class AuthController {
                 .map(AdminUserResponse::fromUser)
                 .collect(Collectors.toList());
         return ResponseEntity.ok(users);
+    }
+
+    @GetMapping("/profile")
+    public ResponseEntity<ProfileResponse> getProfile(Authentication authentication) {
+        ProfileResponse response = authService.getProfile(authentication.getName());
+        return ResponseEntity.ok(response);
+    }
+
+    @PatchMapping("/profile")
+    public ResponseEntity<ProfileResponse> updateProfile(
+            Authentication authentication,
+            @Valid @RequestBody UpdateProfileRequest request
+    ) {
+        ProfileResponse response = authService.updateProfile(authentication.getName(), request);
+        return ResponseEntity.ok(response);
     }
 }

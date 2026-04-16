@@ -78,4 +78,26 @@ public class AuthService {
         user.setVerificationToken(null); 
         userRepository.save(user);
     }
+
+    public ProfileResponse getProfile(String email) {
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new AuthException(HttpStatus.NOT_FOUND, "User not found"));
+        return ProfileResponse.fromUser(user);
+    }
+
+    public ProfileResponse updateProfile(String email, UpdateProfileRequest request) {
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new AuthException(HttpStatus.NOT_FOUND, "User not found"));
+
+        if (request.getDisplayName() != null) {
+            user.setDisplayName(request.getDisplayName().trim());
+        }
+
+        if (request.getPhoneNumber() != null) {
+            user.setPhoneNumber(request.getPhoneNumber().trim());
+        }
+
+        userRepository.save(user);
+        return ProfileResponse.fromUser(user);
+    }
 }

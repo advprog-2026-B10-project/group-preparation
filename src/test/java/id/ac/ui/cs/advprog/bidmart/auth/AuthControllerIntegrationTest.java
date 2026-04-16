@@ -18,6 +18,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import static org.hamcrest.Matchers.hasKey;
 import static org.hamcrest.Matchers.not;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -222,4 +223,143 @@ class AuthControllerIntegrationTest {
                 .andExpect(jsonPath("$[0].verificationToken").doesNotExist())
                 .andExpect(jsonPath("$[0].mfaSecretSet").doesNotExist());
     }
+
+        @Test
+        void profileWithoutTokenReturnsUnauthorizedSchema() throws Exception {
+                mockMvc.perform(get("/api/auth/profile"))
+                                .andExpect(status().isUnauthorized())
+                                .andExpect(jsonPath("$.status").value(401))
+                                .andExpect(jsonPath("$.message").value("Authentication is required"));
+        }
+
+        @Test
+        void getProfileWithTokenReturnsCurrentUserProfile() throws Exception {
+                User seller = User.builder()
+                                .email("seller@example.com")
+                                .password(passwordEncoder.encode("Password!1"))
+                                .displayName("Seller One")
+                                .phoneNumber("+628123456789")
+                                .role(Role.SELLER)
+                                .isEnabled(true)
+                                .build();
+                userRepository.save(seller);
+
+                String loginPayload = """
+                        {
+                            "email": "seller@example.com",
+                            "password": "Password!1"
+                        }
+                        """;
+
+                String responseBody = mockMvc.perform(post("/api/auth/login")
+                                                .contentType(MediaType.APPLICATION_JSON)
+                                                .content(loginPayload))
+                                .andExpect(status().isOk())
+                                .andReturn()
+                                .getResponse()
+                                .getContentAsString();
+
+                String token = objectMapper.readTree(responseBody).get("token").asText();
+
+                mockMvc.perform(get("/api/auth/profile")
+                                                .header("Authorization", "Bearer " + token))
+                                .andExpect(status().isOk())
+                                .andExpect(jsonPath("$.email").value("seller@example.com"))
+                                .andExpect(jsonPath("$.displayName").value("Seller One"))
+                                .andExpect(jsonPath("$.phoneNumber").value("+628123456789"))
+                                .andExpect(jsonPath("$.role").value("SELLER"));
+        }
+
+        @Test
+        void patchProfileUpdatesDisplayNameAndPhoneNumber() throws Exception {
+                User buyer = User.builder()
+                                .email("profile@example.com")
+                                .password(passwordEncoder.encode("Password!1"))
+                                .displayName("Old Name")
+                                .phoneNumber("0812345678")
+                                .role(Role.BUYER)
+                                .isEnabled(true)
+                                .build();
+                userRepository.save(buyer);
+
+                String loginPayload = """
+                        {
+                            "email": "profile@example.com",
+                            "password": "Password!1"
+                        }
+                        """;
+
+                String responseBody = mockMvc.perform(post("/api/auth/login")
+                                                .contentType(MediaType.APPLICATION_JSON)
+                                                .content(loginPayload))
+                                .andExpect(status().isOk())
+                                .andReturn()
+                                .getResponse()
+                                .getContentAsString();
+
+                String token = objectMapper.readTree(responseBody).get("token").asText();
+
+                String updatePayload = """
+                        {
+                            "displayName": "New Name",
+                            "phoneNumber": "+628888777666"
+                        }
+                        """;
+
+                mockMvc.perform(patch("/api/auth/profile")
+                                                .header("Authorization", "Bearer " + token)
+                                                .contentType(MediaType.APPLICATION_JSON)
+                                                .content(updatePayload))
+                                .andExpect(status().isOk())
+                                .andExpect(jsonPath("$.displayName").value("New Name"))
+                                .andExpect(jsonPath("$.phoneNumber").value("+628888777666"));
+
+                User updated = userRepository.findByEmail("profile@example.com").orElseThrow();
+                org.junit.jupiter.api.Assertions.assertEquals("New Name", updated.getDisplayName());
+                org.junit.jupiter.api.Assertions.assertEquals("+628888777666", updated.getPhoneNumber());
+        }
+
+        @Test
+        void patchProfileInvalidPhoneReturnsValidationSchema() throws Exception {
+                User buyer = User.builder()
+                                .email("invalidphone@example.com")
+                                .password(passwordEncoder.encode("Password!1"))
+                                .displayName("Buyer")
+                                .role(Role.BUYER)
+                                .isEnabled(true)
+                                .build();
+                userRepository.save(buyer);
+
+                String loginPayload = """
+                        {
+                            "email": "invalidphone@example.com",
+                            "password": "Password!1"
+                        }
+                        """;
+
+                String responseBody = mockMvc.perform(post("/api/auth/login")
+                                                .contentType(MediaType.APPLICATION_JSON)
+                                                .content(loginPayload))
+                                .andExpect(status().isOk())
+                                .andReturn()
+                                .getResponse()
+                                .getContentAsString();
+
+                String token = objectMapper.readTree(responseBody).get("token").asText();
+
+                String updatePayload = """
+                        {
+                            "phoneNumber": "abc-123"
+                        }
+                        """;
+
+                mockMvc.perform(patch("/api/auth/profile")
+                                                .header("Authorization", "Bearer " + token)
+                                                .contentType(MediaType.APPLICATION_JSON)
+                                                .content(updatePayload))
+                                .andExpect(status().isBadRequest())
+                                .andExpect(jsonPath("$.status").value(400))
+                                .andExpect(jsonPath("$.message").value("Validation failed"))
+                                .andExpect(jsonPath("$.details", hasKey("phoneNumber")));
+        }
 }
