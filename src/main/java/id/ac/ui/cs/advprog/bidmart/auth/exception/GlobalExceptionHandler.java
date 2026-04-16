@@ -14,31 +14,45 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 public class GlobalExceptionHandler {
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
-    public ResponseEntity<Map<String, String>> handleValidationExceptions(MethodArgumentNotValidException ex) {
+    public ResponseEntity<ApiErrorResponse> handleValidationExceptions(
+            MethodArgumentNotValidException ex,
+            HttpServletRequest request
+    ) {
         Map<String, String> errors = new HashMap<>();
         ex.getBindingResult().getFieldErrors().forEach(error -> 
             errors.put(error.getField(), error.getDefaultMessage())
         );
-        return ResponseEntity.badRequest().body(errors);
+
+        ApiErrorResponse response = ApiErrorResponse.builder()
+                .status(HttpStatus.BAD_REQUEST.value())
+                .error(HttpStatus.BAD_REQUEST.getReasonPhrase())
+                .message("Validation failed")
+                .path(request.getRequestURI())
+                .details(errors)
+                .build();
+
+        return ResponseEntity.badRequest().body(response);
     }
 
     @ExceptionHandler(AuthException.class)
-    public ResponseEntity<Map<String, Object>> handleAuthException(AuthException ex, HttpServletRequest request) {
-        Map<String, Object> error = new HashMap<>();
-        error.put("status", ex.getStatus().value());
-        error.put("error", ex.getStatus().getReasonPhrase());
-        error.put("message", ex.getMessage());
-        error.put("path", request.getRequestURI());
-        return ResponseEntity.status(ex.getStatus()).body(error);
+    public ResponseEntity<ApiErrorResponse> handleAuthException(AuthException ex, HttpServletRequest request) {
+        ApiErrorResponse response = ApiErrorResponse.builder()
+                .status(ex.getStatus().value())
+                .error(ex.getStatus().getReasonPhrase())
+                .message(ex.getMessage())
+                .path(request.getRequestURI())
+                .build();
+        return ResponseEntity.status(ex.getStatus()).body(response);
     }
 
     @ExceptionHandler(Exception.class)
-    public ResponseEntity<Map<String, Object>> handleGenericException(Exception ex, HttpServletRequest request) {
-        Map<String, Object> error = new HashMap<>();
-        error.put("status", HttpStatus.INTERNAL_SERVER_ERROR.value());
-        error.put("error", HttpStatus.INTERNAL_SERVER_ERROR.getReasonPhrase());
-        error.put("message", "An unexpected error occurred");
-        error.put("path", request.getRequestURI());
-        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(error);
+    public ResponseEntity<ApiErrorResponse> handleGenericException(Exception ex, HttpServletRequest request) {
+        ApiErrorResponse response = ApiErrorResponse.builder()
+                .status(HttpStatus.INTERNAL_SERVER_ERROR.value())
+                .error(HttpStatus.INTERNAL_SERVER_ERROR.getReasonPhrase())
+                .message("An unexpected error occurred")
+                .path(request.getRequestURI())
+                .build();
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
     }
 }
