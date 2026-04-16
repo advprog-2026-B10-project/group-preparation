@@ -6,6 +6,7 @@ import id.ac.ui.cs.advprog.bidmart.auth.dto.LoginRequest;
 import id.ac.ui.cs.advprog.bidmart.auth.dto.ProfileResponse;
 import id.ac.ui.cs.advprog.bidmart.auth.dto.RegisterRequest;
 import id.ac.ui.cs.advprog.bidmart.auth.dto.UpdateProfileRequest;
+import id.ac.ui.cs.advprog.bidmart.auth.dto.RefreshTokenRequest;
 import id.ac.ui.cs.advprog.bidmart.auth.repository.UserRepository;
 import id.ac.ui.cs.advprog.bidmart.auth.service.AuthService;
 import jakarta.validation.Valid;
@@ -66,5 +67,17 @@ public class AuthController {
     ) {
         ProfileResponse response = authService.updateProfile(authentication.getName(), request);
         return ResponseEntity.ok(response);
+    }
+
+    @PostMapping("/refresh")
+    public ResponseEntity<AuthResponse> refresh(@Valid @RequestBody RefreshTokenRequest request) {
+        AuthResponse response = authService.refreshTokens(request.getRefreshToken());
+        return ResponseEntity.ok(response);
+    }
+
+    @PostMapping("/logout")
+    public ResponseEntity<String> logout(Authentication authentication) {
+        authService.logout(authentication.getName());
+        return ResponseEntity.ok("Logged out successfully");
     }
 }

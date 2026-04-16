@@ -1,7 +1,8 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import axios from 'axios';
+import axiosClient from '@/lib/axiosClient';
+import { logout } from '@/lib/authUtils';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 
@@ -20,13 +21,18 @@ interface ApiError {
   details?: Record<string, string>;
 }
 
+interface UiStatus {
+  type: 'success' | 'error' | '';
+  message: string;
+}
+
 export default function ProfilePage() {
   const [profile, setProfile] = useState<ProfileResponse | null>(null);
   const [displayName, setDisplayName] = useState('');
   const [phoneNumber, setPhoneNumber] = useState('');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [status, setStatus] = useState<{ type: 'success' | 'error' | ''; message: string }>({
+  const [status, setStatus] = useState<UiStatus>({
     type: '',
     message: '',
   });
@@ -39,30 +45,31 @@ export default function ProfilePage() {
       return;
     }
 
-    fetchProfile(token);
+    fetchProfile();
   }, [router]);
 
-  const fetchProfile = async (token: string) => {
+  const fetchProfile = async () => {
     setLoading(true);
     setStatus({ type: '', message: '' });
 
     try {
-      const response = await axios.get<ProfileResponse>('http://localhost:8080/api/auth/profile', {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-
+      const response = await axiosClient.get<ProfileResponse>('/auth/profile');
       setProfile(response.data);
       setDisplayName(response.data.displayName ?? '');
       setPhoneNumber(response.data.phoneNumber ?? '');
     } catch (err: unknown) {
       const fallbackMessage = 'Failed to load profile.';
-      if (axios.isAxiosError(err)) {
+      if (axiosClient.isAxiosError?.(err)) {
         const apiError = err.response?.data as ApiError | undefined;
-        setStatus({ type: 'error', message: apiError?.message ?? fallbackMessage });
+        setStatus({
+          type: 'error',
+          message: apiError?.message ?? fallbackMessage,
+        });
       } else {
-        setStatus({ type: 'error', message: fallbackMessage });
+        setStatus({
+          type: 'error',
+          message: fallbackMessage,
+        });
       }
     } finally {
       setLoading(false);
@@ -71,27 +78,15 @@ export default function ProfilePage() {
 
   const handleSave = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-
-    const token = localStorage.getItem('token');
-    if (!token) {
-      router.push('/login');
-      return;
-    }
-
     setSaving(true);
     setStatus({ type: '', message: '' });
 
     try {
-      const response = await axios.patch<ProfileResponse>(
-        'http://localhost:8080/api/auth/profile',
+      const response = await axiosClient.patch<ProfileResponse>(
+        '/auth/profile',
         {
           displayName,
           phoneNumber,
-        },
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
         }
       );
 
@@ -100,7 +95,7 @@ export default function ProfilePage() {
     } catch (err: unknown) {
       const fallbackMessage = 'Failed to update profile.';
 
-      if (axios.isAxiosError(err)) {
+      if (axiosClient.isAxiosError?.(err)) {
         const apiError = err.response?.data as ApiError | undefined;
         const details = apiError?.details ? Object.values(apiError.details).join(', ') : '';
         setStatus({
@@ -108,16 +103,18 @@ export default function ProfilePage() {
           message: details || apiError?.message || fallbackMessage,
         });
       } else {
-        setStatus({ type: 'error', message: fallbackMessage });
+        setStatus({
+          type: 'error',
+          message: fallbackMessage,
+        });
       }
     } finally {
       setSaving(false);
     }
   };
 
-  const handleLogout = () => {
-    localStorage.clear();
-    router.push('/login');
+  const handleLogout = async () => {
+    await logout();
   };
 
   return (
@@ -152,7 +149,7 @@ export default function ProfilePage() {
                 : 'bg-green-500/10 text-green-400 border-green-500/40'
             }`}
           >
-            {status.message}
+            <p>{status.message}</p>
           </div>
         )}
 

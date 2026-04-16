@@ -1,7 +1,8 @@
 'use client';
-import { useEffect, useState, useSyncExternalStore } from 'react';
+import { useEffect, useState, useSyncExternalStore, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import axios from 'axios';
+import { logout } from '@/lib/authUtils';
+import axiosClient from '@/lib/axiosClient';
 import Link from 'next/link';
 
 interface User {
@@ -28,34 +29,28 @@ export default function HomePage() {
     () => null
   );
 
-  const fetchUsers = async (token: string) => {
+  const fetchUsers = useCallback(async () => {
     try {
-      const response = await axios.get('http://localhost:8080/api/auth/users', {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        }
-      });
+      const response = await axiosClient.get('/auth/users');
       setUsers(response.data);
     } catch (err) {
-      console.error("Axios Error Details:", err);
+      console.error("Error fetching users:", err);
     }
-  };
+  }, []);
 
   useEffect(() => {
     const token = localStorage.getItem('token');
-
     if (!token) {
       router.push('/login');
-      return;
     }
+  }, [router]);
 
-    // Only attempt to fetch the user list if the user is an ADMIN
+  useEffect(() => {
     if (userRole === 'ADMIN') {
       // eslint-disable-next-line react-hooks/set-state-in-effect
-      fetchUsers(token);
+      fetchUsers();
     }
-  }, [router, userRole]);
+  }, [userRole, fetchUsers]);
 
   const getRoleBadgeStyle = (role: string) => {
     switch (role?.toUpperCase()) {
@@ -70,9 +65,8 @@ export default function HomePage() {
     }
   };
 
-  const handleLogout = () => {
-    localStorage.clear();
-    router.push('/login');
+  const handleLogout = async () => {
+    await logout();
   };
 
   return (

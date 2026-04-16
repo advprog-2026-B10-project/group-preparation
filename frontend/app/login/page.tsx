@@ -1,8 +1,8 @@
 'use client';
 import { useState } from 'react';
-import axios from 'axios';
+import axiosClient from '@/lib/axiosClient';
 import { useRouter } from 'next/navigation';
-import Link from 'next/link'; // For the redirect link
+import Link from 'next/link';
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');
@@ -17,17 +17,18 @@ export default function LoginPage() {
     setError('');
     
     try {
-      const response = await axios.post('http://localhost:8080/api/auth/login', { 
+      const response = await axiosClient.post('/auth/login', { 
         email, 
         password 
       });
       
       localStorage.setItem('token', response.data.token);
+      localStorage.setItem('refreshToken', response.data.refreshToken);
       localStorage.setItem('email', response.data.email);
       localStorage.setItem('role', response.data.role);
       router.push('/');
     } catch (err: unknown) {
-      const message = axios.isAxiosError(err)
+      const message = axiosClient.isAxiosError?.(err)
         ? (err.response?.data as { message?: string } | undefined)?.message || 'Invalid credentials or account not verified.'
         : 'Invalid credentials or account not verified.';
       setError(message);

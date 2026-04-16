@@ -2,22 +2,27 @@ package id.ac.ui.cs.advprog.bidmart.auth.service;
 
 import id.ac.ui.cs.advprog.bidmart.auth.dto.*;
 import id.ac.ui.cs.advprog.bidmart.auth.entity.Role;
+import id.ac.ui.cs.advprog.bidmart.auth.entity.RefreshToken;
 import id.ac.ui.cs.advprog.bidmart.auth.entity.User;
 import id.ac.ui.cs.advprog.bidmart.auth.exception.AuthException;
 import id.ac.ui.cs.advprog.bidmart.auth.repository.UserRepository;
+import id.ac.ui.cs.advprog.bidmart.auth.repository.RefreshTokenRepository;
 import lombok.RequiredArgsConstructor;
 
+import java.time.Instant;
 import java.util.UUID;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
 public class AuthService {
 
     private final UserRepository userRepository;
+    private final RefreshTokenRepository refreshTokenRepository;
     private final JwtService jwtService; 
     private final EmailService emailService;
     private final BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
@@ -66,8 +71,60 @@ public class AuthService {
             throw new AuthException(HttpStatus.FORBIDDEN, "Please verify your email first");
         }
 
-        String token = jwtService.generateToken(user);
-        return new AuthResponse(token, user.getEmail(), user.getRole().name());
+        String accessToken = jwtService.generateToken(user);
+        String refreshToken = jwtService.generateRefreshToken(user);
+
+        // Save refresh token to database
+        RefreshToken token = RefreshToken.builder()
+                .token(refreshToken)
+                .email(user.getEmail())
+                .expiresAt(Instant.now().plusSeconds(7 * 24 * 60 * 60))
+                .revoked(false)
+                .build();
+        refreshTokenRepository.save(token);
+
+        return AuthResponse.builder()
+                .token(accessToken)
+                .refreshToken(refreshToken)
+                .expiresIn(jwtService.getAccessTokenExpiration() / 1000)
+                .email(user.getEmail())
+                .role(user.getRole().name())
+                .build();
+    }
+
+    public AuthResponse refreshTokens(String refreshTokenValue) {
+        RefreshToken refreshToken = refreshTokenRepository.findByToken(refreshTokenValue)
+                .orElseThrow(() -> new AuthException(HttpStatus.UNAUTHORIZED, "Invalid refresh token"));
+
+        if (refreshToken.isRevoked()) {
+            throw new AuthException(HttpStatus.UNAUTHORIZED, "Refresh token has been revoked");
+        }
+
+        if (Instant.now().isAfter(refreshToken.getExpiresAt())) {
+            throw new AuthException(HttpStatus.UNAUTHORIZED, "Refresh token has expired");
+        }
+
+        if (!jwtService.isTokenValid(refreshTokenValue)) {
+            throw new AuthException(HttpStatus.UNAUTHORIZED, "Invalid refresh token");
+        }
+
+        User user = userRepository.findByEmail(refreshToken.getEmail())
+                .orElseThrow(() -> new AuthException(HttpStatus.NOT_FOUND, "User not found"));
+
+        String newAccessToken = jwtService.generateToken(user);
+
+        return AuthResponse.builder()
+                .token(newAccessToken)
+                .refreshToken(refreshTokenValue)
+                .expiresIn(jwtService.getAccessTokenExpiration() / 1000)
+                .email(user.getEmail())
+                .role(user.getRole().name())
+                .build();
+    }
+
+    @Transactional
+    public void logout(String email) {
+        refreshTokenRepository.deleteByEmail(email);
     }
 
     public void verifyUser(String token) {
