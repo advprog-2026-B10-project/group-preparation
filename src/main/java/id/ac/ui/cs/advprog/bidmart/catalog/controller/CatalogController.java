@@ -12,19 +12,19 @@ import java.util.Map;
 @RestController
 @RequestMapping("/api/katalog")
 @CrossOrigin(origins = "*")
-public class KatalogController {
+public class CatalogController {
 
     private final CatalogService catalogService;
 
     @Autowired
-    public KatalogController(CatalogService catalogService) {
+    public CatalogController(CatalogService catalogService) {
         this.catalogService = catalogService;
     }
 
     @PostMapping
-    public ResponseEntity<Catalog> createListing(@RequestBody Catalog katalog) {
-        Catalog newKatalog = catalogService.createListing(katalog);
-        return ResponseEntity.ok(newKatalog);
+    public ResponseEntity<Catalog> createListing(@RequestBody Catalog catalog) {
+        Catalog newCatalog = catalogService.createListing(catalog);
+        return ResponseEntity.ok(newCatalog);
     }
 
     @GetMapping
@@ -34,9 +34,9 @@ public class KatalogController {
 
     @GetMapping("/{id}")
     public ResponseEntity<Catalog> getKatalogById(@PathVariable Long id) {
-        Catalog katalog = catalogService.getKatalogById(id);
-        if (katalog != null) {
-            return ResponseEntity.ok(katalog);
+        Catalog catalog = catalogService.getKatalogById(id);
+        if (catalog != null) {
+            return ResponseEntity.ok(catalog);
         } else {
             return ResponseEntity.notFound().build();
         }
